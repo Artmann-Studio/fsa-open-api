@@ -503,7 +503,7 @@ paths:
     get:
       tags: [Customer]
       operationId: listServiceSpecifications
-      summary: List Film Site Access's catalogue of service specifications
+      summary: List the functions customers can have (service specifications)
       responses:
         '200':
           description: The catalogue.
@@ -1104,7 +1104,7 @@ components:
 
     Service:
       type: object
-      description: A TMF638 Service.
+      description: 'A TMF638 Service: functionality a customer has in Film Site Access, an instance of a ServiceSpecification.'
       required: [id, name, state, serviceSpecification, customer, startDate]
       properties:
         id:
@@ -1171,8 +1171,11 @@ components:
 
     ServiceSpecification:
       type: object
-      description: A TMF633 ServiceSpecification in Film Site Access's catalogue.
-      required: [id, name, description, version, forPartyType]
+      description: |
+        A TMF633 ServiceSpecification: describes one function a customer can have in Film
+        Site Access, for example Access or Emergency. The catalogue is configuration in the
+        backend.
+      required: [id, name, description, version, forPartyType, grantedAtSignUpTo]
       properties:
         id:
           type: string
@@ -1183,8 +1186,20 @@ components:
         version:
           type: string
         forPartyType:
-          type: string
-          enum: [organization, individual]
+          type: array
+          description: Who may have the function.
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PartyTypeValue'
+        grantedAtSignUpTo:
+          type: array
+          description: Who gets the function when they sign up. Within `forPartyType`.
+          items:
+            $ref: '#/components/schemas/PartyTypeValue'
         '@type':
           type: string
           enum: [ServiceSpecification]
+
+    PartyTypeValue:
+      type: string
+      enum: [organization, individual]
