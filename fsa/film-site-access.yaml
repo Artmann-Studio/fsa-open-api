@@ -11,6 +11,9 @@ info:
     sign-up (ADR 0001, 0004), authentication levels and step-up (0002), emergencies (0003),
     digital identities (0005), customer onboarding (0006) and login with password (0007).
 
+    Use cases UC-FSA-31a, 31b, 31c, 33a, 33b and 34b were decided on 2026-11-25 and are not
+    yet in the Encyclopedia Galactica export.
+
     Tenancy is backend-only and never appears in this API. Fields without a value are left
     out of responses rather than sent as null.
   contact:
@@ -22,7 +25,7 @@ servers:
     description: Local development
 tags:
   - name: Sign-up
-    description: Sign-up of an individual or an organization, and verifying the email address (UC-FSA-1a needs it)
+    description: Sign up an individual (UC-FSA-31a) or an organization (UC-FSA-31b), and verify the email address (UC-FSA-31c)
   - name: Authentication
     description: Login and logout (UC-FSA-1a, UC-FSA-29)
   - name: Emergency
@@ -30,7 +33,11 @@ tags:
   - name: Location
     description: The emergency area of a location
   - name: Customer
-    description: Customer onboarding by Film Site Access staff (ADR 0006)
+    description: |
+      Customer onboarding by Film Site Access staff (ADR 0006): list customers (UC-FSA-33a)
+      and add a customer, the CRM customer id and setup (UC-FSA-33b). Adding and ending
+      services by staff has no use case yet. A customer's own change to its services is a
+      service order (UC-FSA-34b), not built.
 security:
   - bearerAuth: []
 
@@ -39,7 +46,7 @@ paths:
     post:
       tags: [Sign-up]
       operationId: signUp
-      summary: Sign up an individual or an organization
+      summary: Sign up an individual (UC-FSA-31a) or an organization (UC-FSA-31b)
       description: |
         Creates the individual (or the organization and its contact person), a user account
         and a customer, and sends a six-digit code to the email address. The person verifies
@@ -85,7 +92,7 @@ paths:
     post:
       tags: [Sign-up]
       operationId: verifyEmail
-      summary: Verify the email address and choose a password
+      summary: Verify email and choose a password (UC-FSA-31c)
       description: |
         The code is valid for 15 minutes and five attempts. A password that breaks the
         policy (12–128 characters, not the email address) is refused without using up an
@@ -135,7 +142,7 @@ paths:
     post:
       tags: [Sign-up]
       operationId: resendEmailVerificationCode
-      summary: Send a new code
+      summary: Send a new code (UC-FSA-31c)
       description: Replaces the earlier code while the address isn't verified. Answers 204 in every case, so it doesn't reveal which customers exist.
       security: []
       parameters:
@@ -340,7 +347,7 @@ paths:
     get:
       tags: [Customer]
       operationId: listCustomers
-      summary: List customers, newest first
+      summary: List customers, newest first (UC-FSA-33a)
       description: Only a user account with the CustomerAdministrator system role. Everyone else gets 403.
       parameters:
         - name: status
@@ -370,7 +377,7 @@ paths:
     get:
       tags: [Customer]
       operationId: getCustomer
-      summary: Get one customer
+      summary: Get one customer (UC-FSA-33a)
       description: An unknown customer also answers 403, so it doesn't reveal which exist.
       responses:
         '200':
@@ -386,7 +393,7 @@ paths:
     patch:
       tags: [Customer]
       operationId: updateCustomer
-      summary: Set the CRM customer id and, for a pending customer, the services
+      summary: Add customer, the CRM customer id and setup (UC-FSA-33b)
       description: |
         On a pending customer both are required, and saving sets the customer up: a tenant,
         Administrator for the contact person, and one service per specification. On an
