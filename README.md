@@ -72,5 +72,5 @@ python tools/check_exchanges.py fsa/film-site-access.yaml exchanges.jsonl
 ```
 
 The recording middleware is not part of the backend, because it would write passwords to
-disk. On 2026-11-25 all 314 exchanges from the backend's 217 tests matched the definition,
+disk. On 2026-11-25 all 357 exchanges from the backend's 250 tests matched the definition,
 across every operation except a successful `GET /customer/{id}`, which no test makes.

@@ -32,6 +32,10 @@ tags:
     description: Declaring and ending an emergency at a location (UC-FSA-32a, UC-FSA-32c)
   - name: Location
     description: The emergency area of a location
+  - name: Specification
+    description: Reference data that describes what can exist, kept in configuration (ADR 0008). Not shown as an area of the app.
+  - name: Permission
+    description: Who may manage the privacy policy and the terms of use, and act on behalf of a party (ADR 0008, TMF672)
   - name: Customer
     description: |
       Customer onboarding by Film Site Access staff (ADR 0006): list customers (UC-FSA-33a)
@@ -517,6 +521,231 @@ paths:
           $ref: '#/components/responses/NotAuthenticated'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /resourceSpecification:
+    get:
+      tags: [Specification]
+      operationId: listResourceSpecifications
+      summary: List the kinds of resource (TMF634)
+      responses:
+        '200':
+          description: The resource specifications, from configuration.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceSpecification'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+
+  /productSpecification:
+    get:
+      tags: [Specification]
+      operationId: listProductSpecifications
+      summary: List what customers can be offered (TMF620)
+      responses:
+        '200':
+          description: The product specifications, from configuration.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductSpecification'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+
+  /activityAssignmentSpecification:
+    get:
+      tags: [Specification]
+      operationId: listActivityAssignmentSpecifications
+      summary: List the kinds of activity assignment
+      responses:
+        '200':
+          description: The activity assignment specifications, from configuration.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityAssignmentSpecification'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+
+  /agreementSpecification:
+    get:
+      tags: [Specification]
+      operationId: listAgreementSpecifications
+      summary: List the versions of the privacy policy and the terms of use (TMF651)
+      description: Public, because the app shows the current versions before sign-up. Newest first.
+      security: []
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AgreementCategory'
+        - name: lifecycleStatus
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/LifecycleStatus'
+      responses:
+        '200':
+          description: The versions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AgreementSpecification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Specification]
+      operationId: createAgreementSpecification
+      summary: Publish a new version of the privacy policy or the terms of use
+      description: |
+        Needs `managePrivacyPolicy` or `manageTermsOfUse`, matching the category. The new
+        version becomes active and retires the earlier one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementSpecificationCreate'
+      responses:
+        '201':
+          description: Published.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementSpecification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          description: '`agreementSpecificationDenied`: the permission is missing.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: '`agreementVersionExists`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /permissionSpecification:
+    get:
+      tags: [Permission]
+      operationId: listPermissionSpecifications
+      summary: List the permissions that can be assigned (TMF672)
+      responses:
+        '200':
+          description: The permissions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionSpecification'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+
+  /permissionSet:
+    get:
+      tags: [Permission]
+      operationId: listPermissionSets
+      summary: List a user account's permissions
+      description: Without `userAccount`, the caller's own. Another account's only for whoever may assign a permission to it.
+      parameters:
+        - name: userAccount
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The permission sets, newest first, including revoked and expired ones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionSet'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Permission]
+      operationId: createPermissionSet
+      summary: Assign a permission to a user account
+      description: |
+        `managePrivacyPolicy` and `manageTermsOfUse`: only a customer administrator in Film Site
+        Access's own tenant, to a user account there. `actOnBehalfOf`: the Administrator of the
+        user account's tenant; it needs `onBehalfOf`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionSetCreate'
+      responses:
+        '201':
+          description: Assigned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionSet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /permissionSet/{id}:
+    patch:
+      tags: [Permission]
+      operationId: updatePermissionSet
+      summary: Revoke a permission
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state]
+              properties:
+                state:
+                  type: string
+                  enum: [revoked]
+      responses:
+        '200':
+          description: Revoked. Kept for the audit trail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionSet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`permissionSetNotActive`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   securitySchemes:
@@ -1203,3 +1432,234 @@ components:
     PartyTypeValue:
       type: string
       enum: [organization, individual]
+
+    # MARK: Specifications and permissions (ADR 0008)
+
+    LifecycleStatus:
+      type: string
+      enum: [active, retired]
+
+    SpecificationRef:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    ResourceSpecification:
+      type: object
+      description: A kind of resource (TMF634).
+      required: [id, name, description, version, lifecycleStatus, resourceType]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        lifecycleStatus:
+          $ref: '#/components/schemas/LifecycleStatus'
+        resourceType:
+          type: string
+          example: lock
+        '@type':
+          type: string
+          enum: [ResourceSpecification]
+
+    ProductSpecification:
+      type: object
+      description: What a customer can be offered, as a set of functions (TMF620).
+      required: [id, name, description, version, lifecycleStatus, forPartyType, serviceSpecification]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        lifecycleStatus:
+          $ref: '#/components/schemas/LifecycleStatus'
+        forPartyType:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyTypeValue'
+        serviceSpecification:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecificationRef'
+        '@type':
+          type: string
+          enum: [ProductSpecification]
+
+    ActivityAssignmentSpecification:
+      type: object
+      description: A kind of activity assignment, with the kinds of resource it may involve.
+      required: [id, name, description, version, lifecycleStatus, resourceSpecification]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        lifecycleStatus:
+          $ref: '#/components/schemas/LifecycleStatus'
+        resourceSpecification:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecificationRef'
+        '@type':
+          type: string
+          enum: [ActivityAssignmentSpecification]
+
+    AgreementCategory:
+      type: string
+      enum: [privacyPolicy, termsOfUse]
+
+    AgreementSpecification:
+      type: object
+      description: One version of the privacy policy or the terms of use (TMF651).
+      required: [id, category, name, version, documentUrl, lifecycleStatus, validFrom]
+      properties:
+        id:
+          type: string
+        category:
+          $ref: '#/components/schemas/AgreementCategory'
+        name:
+          type: string
+        version:
+          type: string
+        documentUrl:
+          type: string
+          format: uri
+        lifecycleStatus:
+          $ref: '#/components/schemas/LifecycleStatus'
+        validFrom:
+          type: string
+          format: date-time
+        '@type':
+          type: string
+          enum: [AgreementSpecification]
+
+    AgreementSpecificationCreate:
+      type: object
+      required: [category, name, version, documentUrl]
+      properties:
+        category:
+          $ref: '#/components/schemas/AgreementCategory'
+        name:
+          type: string
+        version:
+          type: string
+        documentUrl:
+          type: string
+          format: uri
+          pattern: '^https://'
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: Now when left out.
+
+    PermissionSpecification:
+      type: object
+      required: [id, name, description, requiresParty]
+      properties:
+        id:
+          type: string
+          enum: [managePrivacyPolicy, manageTermsOfUse, actOnBehalfOf]
+        name:
+          type: string
+        description:
+          type: string
+        requiresParty:
+          type: boolean
+          description: True when a permission set must name the party it applies to.
+        '@type':
+          type: string
+          enum: [PermissionSpecification]
+
+    PermissionSet:
+      type: object
+      description: A permission assigned to a user account (TMF672).
+      required: [id, userAccount, permissionSpecification, validFor, state, assignedBy]
+      properties:
+        id:
+          type: string
+        userAccount:
+          $ref: '#/components/schemas/UserAccountRef'
+        permissionSpecification:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+        onBehalfOf:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+            '@referredType':
+              type: string
+              enum: [Party]
+        validFor:
+          $ref: '#/components/schemas/ValidFor'
+        state:
+          type: string
+          enum: [active, revoked, expired]
+        assignedBy:
+          $ref: '#/components/schemas/UserAccountRef'
+        '@type':
+          type: string
+          enum: [PermissionSet]
+
+    ValidFor:
+      type: object
+      properties:
+        startDateTime:
+          type: string
+          format: date-time
+          nullable: true
+        endDateTime:
+          type: string
+          format: date-time
+          nullable: true
+
+    PermissionSetCreate:
+      type: object
+      required: [userAccount, permissionSpecification]
+      properties:
+        userAccount:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+        permissionSpecification:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              enum: [managePrivacyPolicy, manageTermsOfUse, actOnBehalfOf]
+        onBehalfOf:
+          type: object
+          nullable: true
+          description: Required for `actOnBehalfOf`, not allowed for the others.
+          required: [id]
+          properties:
+            id:
+              type: string
+        validFor:
+          allOf:
+            - $ref: '#/components/schemas/ValidFor'
+          description: An end in the future, or none.
