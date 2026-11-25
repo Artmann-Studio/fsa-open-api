@@ -10,7 +10,7 @@ it (quality rule 09-05, *contract first*).
 |---|---|
 | `tmf` | TM Forum Open API specifications, as published by TM Forum |
 | `generated/Tmf674.Server` | ASP.NET Core 8 server generated from TMF674 Geographic Site |
-| `generated/Contracts` | The same generator output, kept as the contract types for the backend |
+| `generated/Contracts` | A second generator output from TMF674, moved from `src/Contracts/Generated` in fsa-backend |
 | `package.json`, `openapitools.json` | OpenAPI Generator, pinned to version 7.21.0 |
 
 | Specification | Release | Used for |
