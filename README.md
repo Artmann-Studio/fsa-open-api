@@ -41,10 +41,36 @@ Requires the .NET 8 SDK.
 dotnet build generated/Tmf674.Server/src/Org.OpenAPITools
 ```
 
-## Film Site Access APIs
+## Film Site Access API
 
-The API that Film Site Access defines itself (sign-up, email verification, login and
-emergencies) has no OpenAPI definition yet. Its shapes are the contract records in
-fsa-backend, `src/Api/Endpoints/*/*Contract.cs`, and are described in its ADRs. Where a TM
-Forum API covers a resource, that API is used; otherwise the shapes follow TM Forum
-conventions (`@type`, `Error`).
+`fsa/film-site-access.yaml` (OpenAPI 3.0.3) defines the API that Film Site Access defines
+itself, where no TM Forum Open API covers the resource: sign-up, email verification, login
+and logout, emergencies, a location's emergency area, and customer onboarding. It follows
+TM Forum conventions (`@type`, `@referredType`, the TM Forum `Error`). The decisions behind
+it are the ADRs in fsa-backend, `doc/decisions`.
+
+The backend implements it in `src/Api/Endpoints`. Change the definition here first, then the
+backend and the app.
+
+### Check the definition
+
+```bash
+pip install openapi-spec-validator openapi-core
+openapi-spec-validator fsa/film-site-access.yaml
+```
+
+### Check the backend against it
+
+`tools/check_exchanges.py` checks recorded requests and responses against the definition:
+every response's status and body, and the request of every successful exchange. Record the
+exchanges by running the backend's tests with a middleware that appends each request and
+response to a file as one JSON line (`method`, `path`, `query`, `requestContentType`,
+`requestBody`, `status`, `responseContentType`, `responseBody`), then:
+
+```bash
+python tools/check_exchanges.py fsa/film-site-access.yaml exchanges.jsonl
+```
+
+The recording middleware is not part of the backend, because it would write passwords to
+disk. On 2026-11-25 all 314 exchanges from the backend's 217 tests matched the definition,
+across every operation except a successful `GET /customer/{id}`, which no test makes.

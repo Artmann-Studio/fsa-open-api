@@ -1,0 +1,1183 @@
+openapi: 3.0.3
+info:
+  title: Film Site Access API
+  version: 0.3.0
+  description: |
+    The API that Film Site Access defines itself, where no TM Forum Open API covers the
+    resource. It follows TM Forum conventions: camelCase names, `@type` on resources,
+    `@referredType` on references, and the TM Forum `Error` shape.
+
+    Decisions behind each part are in fsa-backend, `doc/decisions`:
+    sign-up (ADR 0001, 0004), authentication levels and step-up (0002), emergencies (0003),
+    digital identities (0005), customer onboarding (0006) and login with password (0007).
+
+    Tenancy is backend-only and never appears in this API. Fields without a value are left
+    out of responses rather than sent as null.
+  contact:
+    name: Artmann Studio AB
+servers:
+  - url: https://filmsiteaccess-api.azurewebsites.net/v1
+    description: Azure App Service (MVP)
+  - url: http://localhost:5080/v1
+    description: Local development
+tags:
+  - name: Sign-up
+    description: Sign-up of an individual or an organization, and verifying the email address (UC-FSA-1a needs it)
+  - name: Authentication
+    description: Login and logout (UC-FSA-1a, UC-FSA-29)
+  - name: Emergency
+    description: Declaring and ending an emergency at a location (UC-FSA-32a, UC-FSA-32c)
+  - name: Location
+    description: The emergency area of a location
+  - name: Customer
+    description: Customer onboarding by Film Site Access staff (ADR 0006)
+security:
+  - bearerAuth: []
+
+paths:
+  /signUp:
+    post:
+      tags: [Sign-up]
+      operationId: signUp
+      summary: Sign up an individual or an organization
+      description: |
+        Creates the individual (or the organization and its contact person), a user account
+        and a customer, and sends a six-digit code to the email address. The person verifies
+        the address and chooses a password with `POST /customer/{id}/emailVerification`.
+        The username is the email address. An organization's number is checked with
+        Bolagsverket, and the registered name is used.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: Signed up. A code has been sent to the email address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: '`contactMediumInUse` or `organizationInUse`: already signed up.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: '`organizationNotRegistered` or `organizationDeregistered` at Bolagsverket.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: '`organizationRegisterUnavailable`: Bolagsverket can''t be reached.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customer/{id}/emailVerification:
+    post:
+      tags: [Sign-up]
+      operationId: verifyEmail
+      summary: Verify the email address and choose a password
+      description: |
+        The code is valid for 15 minutes and five attempts. A password that breaks the
+        policy (12–128 characters, not the email address) is refused without using up an
+        attempt. An unknown customer answers like a wrong code.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+      responses:
+        '200':
+          description: Verified, and the password is stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerStatus'
+        '400':
+          description: '`invalidVerificationCode` or `invalidPassword`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: '`alreadyVerified`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: '`verificationCodeExpired`. Ask for a new code.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: '`tooManyVerificationAttempts`. Ask for a new code.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customer/{id}/emailVerificationCode:
+    post:
+      tags: [Sign-up]
+      operationId: resendEmailVerificationCode
+      summary: Send a new code
+      description: Replaces the earlier code while the address isn't verified. Answers 204 in every case, so it doesn't reveal which customers exist.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: A new code has been sent, if the customer is waiting for verification.
+
+  /authenticationMethod:
+    get:
+      tags: [Authentication]
+      operationId: listAuthenticationMethods
+      summary: List the login methods the backend allows
+      description: The app shows only these. Only password so far.
+      security: []
+      responses:
+        '200':
+          description: The methods.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthenticationMethod'
+
+  /authentication/password:
+    post:
+      tags: [Authentication]
+      operationId: signInWithPassword
+      summary: Log in with email address and password (UC-FSA-1a)
+      description: |
+        A wrong password, an unknown username and an account without a password all get the
+        same 401. Five wrong passwords lock the username for 15 minutes, also when it has no
+        account. A password can't answer a fresh authentication challenge.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordSignInRequest'
+      responses:
+        '200':
+          description: 'Signed in. Send the access token as `Authorization: Bearer`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResponse'
+        '400':
+          description: '`unknownAuthenticationMethod` or `passwordNotAllowedForChallenge`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: '`invalidCredentials`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: '`tooManySignInAttempts`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /authentication/revoke:
+    post:
+      tags: [Authentication]
+      operationId: revokeAccessToken
+      summary: Log out (UC-FSA-29)
+      description: Ends the session of the bearer token. Answers 204 also for an unknown or missing token.
+      responses:
+        '204':
+          description: The session has ended.
+
+  /emergency:
+    post:
+      tags: [Emergency]
+      operationId: declareEmergency
+      summary: Declare an emergency at a location (UC-FSA-32a)
+      description: |
+        The person must be signed in, may grant access to the location, has access to it,
+        and the device must be inside the location's area (BR-32.6). A location has at most
+        one active emergency. The person declaring is the signed-in user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeclareEmergencyRequest'
+      responses:
+        '201':
+          description: Declared.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Emergency'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          description: '`emergencyDeclarationDenied` or `emergencyDeclarationNotAtLocation`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: '`emergencyAlreadyActive`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /emergency/{id}:
+    patch:
+      tags: [Emergency]
+      operationId: endEmergency
+      summary: End an active emergency (UC-FSA-32c)
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyUpdate'
+      responses:
+        '200':
+          description: Ended.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Emergency'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`emergencyAlreadyEnded`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /location/{id}/geofenceOverride:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      tags: [Location]
+      operationId: setGeofenceOverride
+      summary: Set a host's manual area for a location
+      description: The manual area wins over the area worked out from the address. Only a host of the location may set it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeofenceOverrideRequest'
+      responses:
+        '200':
+          description: The area that now applies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Geofence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags: [Location]
+      operationId: removeGeofenceOverride
+      summary: Remove the manual area and use the address again
+      responses:
+        '200':
+          description: The area from the address, which now applies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Geofence'
+        '204':
+          description: Removed. The address gives no area.
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: '`noGeofenceOverride`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customer:
+    get:
+      tags: [Customer]
+      operationId: listCustomers
+      summary: List customers, newest first
+      description: Only a user account with the CustomerAdministrator system role. Everyone else gets 403.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CustomerStatusValue'
+      responses:
+        '200':
+          description: The customers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /customer/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Customer]
+      operationId: getCustomer
+      summary: Get one customer
+      description: An unknown customer also answers 403, so it doesn't reveal which exist.
+      responses:
+        '200':
+          description: The customer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      tags: [Customer]
+      operationId: updateCustomer
+      summary: Set the CRM customer id and, for a pending customer, the services
+      description: |
+        On a pending customer both are required, and saving sets the customer up: a tenant,
+        Administrator for the contact person, and one service per specification. On an
+        active customer only the CRM customer id can change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdate'
+      responses:
+        '200':
+          description: The customer after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`emailNotVerified` or `crmCustomerIdInUse`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /service:
+    get:
+      tags: [Customer]
+      operationId: listServices
+      summary: List all customers' services
+      responses:
+        '200':
+          description: The services.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Customer]
+      operationId: createService
+      summary: Give an active customer a new service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCreate'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /service/{id}:
+    patch:
+      tags: [Customer]
+      operationId: updateService
+      summary: End a service now
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceUpdate'
+      responses:
+        '200':
+          description: The service, with its end date.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`serviceNotActive`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /serviceSpecification:
+    get:
+      tags: [Customer]
+      operationId: listServiceSpecifications
+      summary: List Film Site Access's catalogue of service specifications
+      responses:
+        '200':
+          description: The catalogue.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceSpecification'
+        '401':
+          $ref: '#/components/responses/NotAuthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: The access token from `POST /authentication/password`. Valid for 8 hours or until logout.
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: The request is invalid. `message` says what is wrong.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotAuthenticated:
+      description: '`notAuthenticated`: no valid access token.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Signed in, but not allowed. Also for an unknown id, so the answer doesn't reveal which exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # MARK: Common
+
+    Error:
+      type: object
+      description: A TM Forum Error.
+      required: [code, reason, message, status]
+      properties:
+        code:
+          type: string
+          description: Stable, camelCase, for example `invalidCredentials`.
+        reason:
+          type: string
+        message:
+          type: string
+          description: Text that can be shown to the person.
+        status:
+          type: string
+          description: The HTTP status code as text.
+        '@type':
+          type: string
+          enum: [Error]
+
+    AuthenticationStepUpError:
+      description: |
+        Body of a step-up response: 401 with
+        `WWW-Authenticate: Bearer error="insufficient_user_authentication"` (RFC 9470).
+        The app keeps its token, asks for a stronger login and retries once (ADR 0002).
+        No endpoint returns it yet.
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          required: [requiredAuthenticationLevel, isFreshAuthenticationRequired, allowedAuthenticationMethod]
+          properties:
+            '@type':
+              type: string
+              enum: [AuthenticationStepUpError]
+            '@baseType':
+              type: string
+              enum: [Error]
+            requiredAuthenticationLevel:
+              $ref: '#/components/schemas/AuthenticationLevel'
+            maxAuthenticationAgeInSeconds:
+              type: integer
+            isFreshAuthenticationRequired:
+              type: boolean
+            authenticationChallengeId:
+              type: string
+            allowedAuthenticationMethod:
+              type: array
+              items:
+                $ref: '#/components/schemas/AuthenticationMethod'
+
+    ContactMedium:
+      type: object
+      description: A TMF632 contact medium.
+      required: [mediumType, characteristic]
+      properties:
+        mediumType:
+          type: string
+          enum: [email, mobile, postalAddress]
+        characteristic:
+          $ref: '#/components/schemas/MediumCharacteristic'
+
+    MediumCharacteristic:
+      type: object
+      properties:
+        emailAddress:
+          type: string
+        phoneNumber:
+          type: string
+        street1:
+          type: string
+        street2:
+          type: string
+        postCode:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+
+    # MARK: Sign-up
+
+    SignUpRequest:
+      type: object
+      required: [partyType, name, contactMedium, privacyNoticeVersion]
+      properties:
+        partyType:
+          type: string
+          enum: [individual, organization]
+        name:
+          type: string
+          maxLength: 200
+          description: Full name of an individual, or the legal name of an organization.
+        identification:
+          type: object
+          nullable: true
+          description: Only for an organization, and then required.
+          properties:
+            id:
+              type: string
+              example: 556123-4567
+            type:
+              type: string
+              enum: [Organization number]
+        contactMedium:
+          type: array
+          description: |
+            Exactly one email address and at most one mobile number. An organization also
+            gives its postal address.
+          items:
+            $ref: '#/components/schemas/ContactMedium'
+        privacyNoticeVersion:
+          type: string
+          description: The version of the privacy notice the person accepted.
+        contactPerson:
+          type: object
+          nullable: true
+          description: Only for an organization, and then required. Signs in with their own email address.
+          required: [name, contactMedium]
+          properties:
+            name:
+              type: string
+            contactMedium:
+              type: array
+              items:
+                $ref: '#/components/schemas/ContactMedium'
+
+    SignUpResponse:
+      type: object
+      description: The individual (for an organization, its contact person), the organization if any, the user account and the customer.
+      required: [userAccount]
+      properties:
+        individual:
+          $ref: '#/components/schemas/Individual'
+        organization:
+          $ref: '#/components/schemas/Organization'
+        userAccount:
+          $ref: '#/components/schemas/UserAccount'
+        customer:
+          $ref: '#/components/schemas/CustomerStatus'
+
+    Individual:
+      type: object
+      description: A TMF632 Individual.
+      required: [id, fullName, contactMedium]
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        contactMedium:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactMedium'
+        '@type':
+          type: string
+          enum: [Individual]
+
+    Organization:
+      type: object
+      description: A TMF632 Organization. Its postal address is one of its contact media.
+      required: [id, name, organizationIdentification, contactMedium, relatedParty]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: The name registered at Bolagsverket.
+        organizationIdentification:
+          type: array
+          items:
+            type: object
+            required: [identificationId, identificationType]
+            properties:
+              identificationId:
+                type: string
+              identificationType:
+                type: string
+        contactMedium:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactMedium'
+        relatedParty:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelatedParty'
+        '@type':
+          type: string
+          enum: [Organization]
+
+    RelatedParty:
+      type: object
+      required: [id, name, role]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          example: contact
+        '@referredType':
+          type: string
+          enum: [Individual]
+
+    UserAccount:
+      type: object
+      required: [id, username, systemRole, digitalIdentity]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+          description: The normalized email address.
+        systemRole:
+          type: array
+          description: Granted only by the backend, for example `administrator`.
+          items:
+            type: string
+        digitalIdentity:
+          type: array
+          description: Ids of the digital identities that may sign in (ADR 0005).
+          items:
+            type: string
+        '@type':
+          type: string
+          enum: [UserAccount]
+
+    CustomerStatusValue:
+      type: string
+      enum: [pendingVerification, pending, active]
+
+    CustomerStatus:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        status:
+          $ref: '#/components/schemas/CustomerStatusValue'
+
+    EmailVerificationRequest:
+      type: object
+      required: [code, password]
+      properties:
+        code:
+          type: string
+          pattern: '^\s*[0-9]{6}\s*$'
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+          format: password
+          description: Counted in Unicode characters. May not be the email address.
+
+    # MARK: Authentication
+
+    AuthenticationLevel:
+      type: string
+      enum: [singleFactor, multiFactor]
+
+    AuthenticationMethod:
+      type: object
+      required: [id, name, reachesLevel, category, supportedFlow]
+      properties:
+        id:
+          type: string
+          example: password
+        name:
+          type: string
+          description: For display.
+        reachesLevel:
+          $ref: '#/components/schemas/AuthenticationLevel'
+        category:
+          type: string
+          enum: [password, singleSignOn, digitalId]
+          description: Decides only where the app shows the method.
+        supportedFlow:
+          type: array
+          items:
+            type: string
+            enum: [appSwitch, qrCode, webAuthenticationSession, password, oneTimeCode]
+        url:
+          type: string
+          format: uri
+          description: The login page, for `webAuthenticationSession`.
+        '@type':
+          type: string
+          enum: [AuthenticationMethod]
+
+    PasswordSignInRequest:
+      type: object
+      required: [username, password]
+      properties:
+        authenticationMethodId:
+          type: string
+          nullable: true
+          enum: [password, null]
+        username:
+          type: string
+          description: The email address. Case and surrounding spaces are ignored.
+        password:
+          type: string
+          format: password
+        authenticationChallengeId:
+          type: string
+          nullable: true
+          description: Set only when answering a fresh authentication challenge, which a password can't.
+
+    SignInResponse:
+      type: object
+      required: [accessToken, authenticationContext, expiresAtUtc]
+      properties:
+        accessToken:
+          type: string
+        authenticationContext:
+          $ref: '#/components/schemas/AuthenticationContext'
+        expiresAtUtc:
+          type: string
+          format: date-time
+
+    AuthenticationContext:
+      type: object
+      description: How the session was authenticated, for display only.
+      required: [authenticationLevel, authenticatedAtUtc, authenticationMethodName]
+      properties:
+        authenticationLevel:
+          $ref: '#/components/schemas/AuthenticationLevel'
+        authenticatedAtUtc:
+          type: string
+          format: date-time
+        authenticationMethodName:
+          type: string
+        '@type':
+          type: string
+          enum: [AuthenticationContext]
+
+    # MARK: Emergency
+
+    DeclareEmergencyRequest:
+      type: object
+      required: [location, reason, devicePosition]
+      properties:
+        location:
+          $ref: '#/components/schemas/LocationRef'
+        reason:
+          $ref: '#/components/schemas/EmergencyReason'
+        devicePosition:
+          type: object
+          description: The device's position from location services, WGS 84 degrees. At most 2 minutes old and accurate to 100 m.
+          required: [latitude, longitude, horizontalAccuracyInMeters, measuredAtUtc]
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+            horizontalAccuracyInMeters:
+              type: number
+            measuredAtUtc:
+              type: string
+              format: date-time
+
+    LocationRef:
+      type: object
+      description: A location, which maps to a TMF674 GeographicSite.
+      required: [id]
+      properties:
+        id:
+          type: string
+        '@referredType':
+          type: string
+          enum: [GeographicSite]
+
+    EmergencyReason:
+      type: object
+      required: [category]
+      properties:
+        category:
+          type: string
+          enum: [fire, medical, security, other]
+        description:
+          type: string
+          nullable: true
+          description: Required when the category is `other`.
+
+    EmergencyUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ended]
+
+    Emergency:
+      type: object
+      required: [id, location, reason, initiatedBy, initiatedAtUtc, status, affectedIndividualCount]
+      properties:
+        id:
+          type: string
+        location:
+          $ref: '#/components/schemas/LocationRef'
+        reason:
+          $ref: '#/components/schemas/EmergencyReason'
+        initiatedBy:
+          $ref: '#/components/schemas/UserAccountRef'
+        initiatedAtUtc:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, ended]
+        affectedIndividualCount:
+          type: integer
+          description: The individuals with access to the location. They are counted, not listed.
+        endedBy:
+          $ref: '#/components/schemas/UserAccountRef'
+        endedAtUtc:
+          type: string
+          format: date-time
+        '@type':
+          type: string
+          enum: [Emergency]
+
+    UserAccountRef:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+        '@referredType':
+          type: string
+          enum: [UserAccount]
+
+    # MARK: Location
+
+    GeofenceOverrideRequest:
+      type: object
+      required: [latitude, longitude, radiusInMeters]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        radiusInMeters:
+          type: number
+          minimum: 25
+          maximum: 2000
+
+    Geofence:
+      type: object
+      description: A location's area, which the app calls the emergency area.
+      required: [latitude, longitude, radiusInMeters, source]
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        radiusInMeters:
+          type: number
+        source:
+          type: string
+          enum: [address, manual]
+
+    # MARK: Customer
+
+    Customer:
+      type: object
+      description: A TMF629 Customer with its party, contact person and services.
+      required: [id, name, status, engagedParty, externalReference, service, createdDate]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/CustomerStatusValue'
+        engagedParty:
+          type: object
+          required: [id, name, '@referredType']
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            organizationNumber:
+              type: string
+            '@referredType':
+              type: string
+              enum: [Organization, Individual]
+        contactPerson:
+          $ref: '#/components/schemas/RelatedParty'
+        emailVerification:
+          type: object
+          required: [emailAddress, status]
+          properties:
+            emailAddress:
+              type: string
+            status:
+              type: string
+              enum: [pending, verified]
+            verifiedDate:
+              type: string
+              format: date-time
+        externalReference:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalReference'
+        service:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+        createdDate:
+          type: string
+          format: date-time
+        activatedDate:
+          type: string
+          format: date-time
+        '@type':
+          type: string
+          enum: [Customer]
+
+    ExternalReference:
+      type: object
+      description: A TMF632 external reference, such as the CRM customer id.
+      properties:
+        externalIdentifierType:
+          type: string
+          example: crmCustomerId
+        name:
+          type: string
+
+    CustomerUpdate:
+      type: object
+      properties:
+        externalReference:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalReference'
+        serviceSpecification:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceSpecificationRef'
+
+    Service:
+      type: object
+      description: A TMF638 Service.
+      required: [id, name, state, serviceSpecification, customer, startDate]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        state:
+          type: string
+          enum: [active, terminated]
+        serviceSpecification:
+          $ref: '#/components/schemas/ServiceSpecificationRef'
+        customer:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        '@type':
+          type: string
+          enum: [Service]
+
+    ServiceSpecificationRef:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    ServiceCreate:
+      type: object
+      required: [customer, serviceSpecification]
+      properties:
+        customer:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+        serviceSpecification:
+          $ref: '#/components/schemas/ServiceSpecificationRef'
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Now when left out.
+
+    ServiceUpdate:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [terminated]
+
+    ServiceSpecification:
+      type: object
+      description: A TMF633 ServiceSpecification in Film Site Access's catalogue.
+      required: [id, name, description, version, forPartyType]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        forPartyType:
+          type: string
+          enum: [organization, individual]
+        '@type':
+          type: string
+          enum: [ServiceSpecification]
