@@ -392,7 +392,7 @@ paths:
       tags: [Customer]
       operationId: listCustomers
       summary: List customers, newest first (UC-FSA-33a)
-      description: Only a user account with the FsaSales system role (the actor FSA sales). Everyone else gets 403.
+      description: Only a user account with the CustomerAdministrator system role. Everyone else gets 403.
       parameters:
         - name: status
           in: query
@@ -726,7 +726,7 @@ paths:
       operationId: createPermissionSet
       summary: Assign a permission to a user account
       description: |
-        `managePrivacyPolicy` and `manageTermsOfUse`: only FSA support (FsaSupport) in Film Site
+        `managePrivacyPolicy` and `manageTermsOfUse`: only a customer administrator in Film Site
         Access's own tenant, to a user account there. `actOnBehalfOf`: the Administrator of the
         user account's tenant; it needs `onBehalfOf`.
       requestBody:
