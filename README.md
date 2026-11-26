@@ -8,7 +8,7 @@ it (quality rule 09-05, *contract first*).
 
 | Path | What it is |
 |---|---|
-| `tmf` | TM Forum Open APIs, one folder per API: what FSA uses it for and, where we have it, the specification as published by TM Forum. See [`tmf/README.md`](tmf/README.md) |
+| `tmf` | TM Forum Open APIs, one folder per API: what FSA uses it for and, where we have them, the specification, the Postman collection and the reference implementation kit as published by TM Forum. See [`tmf/README.md`](tmf/README.md) |
 | `fsa` | The Film Site Access API, where no TM Forum Open API covers the resource |
 | `docs` | How FSA information objects map to TM Forum resources, starting with [ActivityAssignment and TMF713](docs/activity-assignment.md) |
 | `generated/Tmf674.Server` | ASP.NET Core 8 server generated from TMF674 Geographic Site |
@@ -21,7 +21,17 @@ it (quality rule 09-05, *contract first*).
 | [TMF674 Geographic Site Management](tmf/TMF674-geographic-site) | 19.5 | Locations (version 0.4 in the MVP roadmap) |
 | [TMF713 Work Management](tmf/TMF713-work-management) | 4.0.0 beta | Activity assignments |
 
-The other TM Forum APIs in [`tmf`](tmf/README.md) are documented, but their specification files aren't in the repository yet.
+The other TM Forum APIs in [`tmf`](tmf/README.md) are documented, but their specification files aren't in the repository yet. For TMF620, TMF629, TMF632, TMF634, TMF638, TMF641, TMF669, TMF672, TMF720 and TMF771 there is a TM Forum Postman collection, a reference implementation kit, or both; most are version 5.
+
+## Run a TM Forum reference implementation
+
+Requires Docker Desktop. A reference implementation is a mock of a TM Forum API, for trying the app or backend against the standard before FSA implements it:
+
+```bash
+./tmf/TMF632-party/ri/run.sh
+```
+
+See [reference implementations](tmf/README.md#reference-implementations) for ports, resetting the data and the certificate the version 4 kits need.
 
 The TMF674 files were moved from fsa-backend, where they were in `openapi/tmf`, `src/Tmf674.Server` and
 `src/Contracts`. The backend doesn't reference the generated code yet.

@@ -23,6 +23,13 @@ Every API also has `POST /hub` and `DELETE /hub/{id}` to subscribe to its events
 
 Individual.status and Organization.status are strings; the examples use initialized and validated.
 
+## Files in this folder
+
+| Path | What it is |
+|---|---|
+| `postman/tmf632-postman-collection-5.0.0.json` | TM Forum Postman collection, version 5.0.0 (release 22.5): Individual, Organization, hub and listeners. Base URL variable `{{baseUrl}}`, set to `https://serverRoot/partyManagement/v5` |
+| `ri/` | TM Forum reference implementation kit for TMF632 version 5.0.0 (image `tmforumorg/tmf632-v5.0.0-ri:1.0.1`, port 8632). See [running a reference implementation](../README.md#reference-implementations) |
+
 ## Specification
 
-Not in this folder yet. Only the TM Forum document was available. Add the Swagger or OpenAPI file that TM Forum publishes for this API before generating code or defining FSA resources from it.
+Not in this folder yet. The documentation above is version 4; the Postman collection and the reference implementation are version 5. Add the OpenAPI file that TM Forum publishes for version 5 before generating code or defining FSA resources from it.
