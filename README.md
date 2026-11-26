@@ -8,16 +8,22 @@ it (quality rule 09-05, *contract first*).
 
 | Path | What it is |
 |---|---|
-| `tmf` | TM Forum Open API specifications, as published by TM Forum |
+| `tmf` | TM Forum Open APIs, one folder per API: what FSA uses it for and, where we have it, the specification as published by TM Forum. See [`tmf/README.md`](tmf/README.md) |
+| `fsa` | The Film Site Access API, where no TM Forum Open API covers the resource |
+| `docs` | How FSA information objects map to TM Forum resources, starting with [ActivityAssignment and TMF713](docs/activity-assignment.md) |
 | `generated/Tmf674.Server` | ASP.NET Core 8 server generated from TMF674 Geographic Site |
 | `generated/Contracts` | A second generator output from TMF674, moved from `src/Contracts/Generated` in fsa-backend |
 | `package.json`, `openapitools.json` | OpenAPI Generator, pinned to version 7.21.0 |
+| `tools` | Checks of the backend against the FSA definition |
 
 | Specification | Release | Used for |
 |---|---|---|
-| TMF674 Geographic Site Management | 19.5 | Locations (version 0.4 in the MVP roadmap) |
+| [TMF674 Geographic Site Management](tmf/TMF674-geographic-site) | 19.5 | Locations (version 0.4 in the MVP roadmap) |
+| [TMF713 Work Management](tmf/TMF713-work-management) | 4.0.0 beta | Activity assignments |
 
-Moved from fsa-backend, where they were in `openapi/tmf`, `src/Tmf674.Server` and
+The other TM Forum APIs in [`tmf`](tmf/README.md) are documented, but their specification files aren't in the repository yet.
+
+The TMF674 files were moved from fsa-backend, where they were in `openapi/tmf`, `src/Tmf674.Server` and
 `src/Contracts`. The backend doesn't reference the generated code yet.
 
 ## Generate
@@ -26,7 +32,7 @@ Requires Node.js and Java (for OpenAPI Generator).
 
 ```bash
 npm install
-npx openapi-generator-cli generate -i tmf/TMF674.yaml -g aspnetcore \
+npx openapi-generator-cli generate -i tmf/TMF674-geographic-site/TMF674.yaml -g aspnetcore \
   --additional-properties aspnetCoreVersion=8.0 -o generated/Tmf674.Server
 ```
 
@@ -45,7 +51,8 @@ dotnet build generated/Tmf674.Server/src/Org.OpenAPITools
 
 `fsa/film-site-access.yaml` (OpenAPI 3.0.3) defines the API that Film Site Access defines
 itself, where no TM Forum Open API covers the resource: sign-up, email verification, login
-and logout, emergencies, a location's emergency area, and customer onboarding. It follows
+and logout, emergencies, a location's emergency area, and customer onboarding. Film Site Access uses a TM Forum Open API wherever one
+fits, so a resource belongs here only when no API in [`tmf`](tmf/README.md) covers it. It follows
 TM Forum conventions (`@type`, `@referredType`, the TM Forum `Error`). The decisions behind
 it are the ADRs in fsa-backend, `doc/decisions`.
 
