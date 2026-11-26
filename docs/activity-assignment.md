@@ -39,7 +39,7 @@ The extension is the TM Forum sub-class mechanism: `@type: ActivityAssignment`, 
 
 - **Individual uses `relatedParty`, not `workforceEmployeeAssignment`.** TMF713 writes WorkforceEmployeeAssignment for a company's own workforce. In FSA the individual is often a visitor or crew from another company, and the relation is to the Individual, not to a role.
 - **AccessPoint is not put in `place[]`.** AccessPoint is not a subtype of Place (remark on relation 9), so it gets its own list instead of a place with a role.
-- **Equipment is the UX term; Product is the API term.** The API says `product`. The app says *equipment*.
+- **Equipment is the business term; Product is the information object.** The API and code say `product`. The app says *equipment*.
 
 ## Attributes
 
@@ -57,16 +57,16 @@ The extension is the TM Forum sub-class mechanism: `@type: ActivityAssignment`, 
 
 TMF713 has one state type, WorkStateType, for both `Work.state` and `WorkforceEmployeeAssignment.state`: acknowledged, rejected, pending, held, inProgress, cancelled, completed, failed, partial.
 
-*Pending*, *approved*, *declined* and *revoked* are UX language (decision by the model owner, 2026-11-26). The API uses WorkStateType, and the app shows the UX term:
+Business terms are the language of the UX design. Information objects, and their data entities and elements, are the language of code and the API (decision by the model owner, 2026-11-26). So the API uses WorkStateType, and the app shows the business term:
 
-| WorkStateType (API) | UX term |
+| WorkStateType (API) | Business term (UX) |
 |---|---|
 | `pending` | pending (1257) |
 | `acknowledged` | approved (1258) |
 | `rejected` | declined (1259) |
 | `cancelled` | revoked (1260) |
 
-The other WorkStateType values (`held`, `inProgress`, `completed`, `failed`, `partial`) have no UX term yet.
+The other WorkStateType values (`held`, `inProgress`, `completed`, `failed`, `partial`) have no business term yet.
 
 ## Presence is not part of this
 
@@ -75,9 +75,8 @@ Presence (24) is *whether an individual or a resource is at a geographical locat
 ## Model questions
 
 1. **Information object 23 has no TM Forum reference.** ActivityAssignment has `Standard: Falskt` and an empty `Standard reference`, while Activity (90) and ActivityAssignmentSpecification (91) refer to TMF713. Should row 23 say TMF713 (Work)?
-2. **Status terms are marked as business terms.** Terms 1257–1260 have information object ActivityAssignment and boundary Film Site Access, but they are UX language. Should they be marked as UX terms, so the API isn't expected to use them?
-3. **Relations to Individual and Product are missing.** `semantic-relations.csv` has ActivityAssignment to Place (15), AccessPoint (18), Resource (19) and ActivityAssignment (20), but not to Individual or Product.
-4. **Equipment has no Film Site Access row.** Business term *equipment* (93) maps to Product, but its Boundary is empty and its capability is *Film and TV production*.
-5. **Access point.** AccessPoint (22) has no TM Forum reference and no data entity, so `accessPoint[]` refers to a resource of the FSA API that isn't defined yet.
-6. **No data entity.** `data-entities.csv` has no entity for ActivityAssignment, so the fields above can't be checked against `data-elements.csv` yet.
-7. **FSA definition overlaps.** `fsa/film-site-access.yaml` defines `GET /activityAssignmentSpecification` with its own schema (`resourceSpecification[]`, `productSpecification[]`). If the mapping is accepted, it becomes `GET /workSpecification` with `@type: ActivityAssignmentSpecification`.
+2. **Relations to Individual and Product are missing.** `semantic-relations.csv` has ActivityAssignment to Place (15), AccessPoint (18), Resource (19) and ActivityAssignment (20), but not to Individual or Product.
+3. **Equipment has no Film Site Access row.** Business term *equipment* (93) maps to Product, but its Boundary is empty and its capability is *Film and TV production*.
+4. **Access point.** AccessPoint (22) has no TM Forum reference and no data entity, so `accessPoint[]` refers to a resource of the FSA API that isn't defined yet.
+5. **No data entity.** `data-entities.csv` has no entity for ActivityAssignment, so the fields above can't be checked against `data-elements.csv` yet.
+6. **FSA definition overlaps.** `fsa/film-site-access.yaml` defines `GET /activityAssignmentSpecification` with its own schema (`resourceSpecification[]`, `productSpecification[]`). If the mapping is accepted, it becomes `GET /workSpecification` with `@type: ActivityAssignmentSpecification`.
