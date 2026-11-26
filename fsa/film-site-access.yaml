@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Film Site Access API
-  version: 0.3.0
+  version: 0.3.1
   description: |
     The API that Film Site Access defines itself, where no TM Forum Open API covers the
     resource. It follows TM Forum conventions: camelCase names, `@type` on resources,
@@ -23,6 +23,8 @@ servers:
   - url: http://localhost:5080/v1
     description: Local development
 tags:
+  - name: Health
+    description: Whether the API answers. The protected check needs the health check access token from the key vault, not login
   - name: Sign-up
     description: Sign up an individual (UC-FSA-31a) or an organization (UC-FSA-31b), and verify the email address (UC-FSA-31c)
   - name: Authentication
@@ -45,6 +47,37 @@ security:
   - bearerAuth: []
 
 paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: checkHealthWithAccessToken
+      summary: Check that the API answers, with the health check access token
+      description: |
+        For a client that has the health check access token, for example the iOS app in
+        development, to check that it reaches the API without login. The token is the key
+        vault secret `HealthCheck--AccessToken`. A session's access token isn't accepted.
+        The public `GET /health` outside `/v1` answers without a token, for App Service.
+      security:
+        - healthCheckAccessToken: []
+      responses:
+        '200':
+          description: The API answers and the token is accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '401':
+          description: '`notAuthenticated`: no token, a wrong token, or no token configured in the API. The answer is the same for all three.'
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+                enum: [Bearer]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /signUp:
     post:
       tags: [Sign-up]
@@ -793,6 +826,10 @@ components:
       type: http
       scheme: bearer
       description: The access token from `POST /authentication/password`. Valid for 8 hours or until logout.
+    healthCheckAccessToken:
+      type: http
+      scheme: bearer
+      description: The health check access token, the key vault secret `HealthCheck--AccessToken`. Only for `GET /health`.
 
   parameters:
     Id:
@@ -824,6 +861,14 @@ components:
 
   schemas:
     # MARK: Common
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
 
     Error:
       type: object
