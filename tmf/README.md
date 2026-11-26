@@ -23,7 +23,7 @@ Each folder has a README: what FSA uses the API for, the information objects it 
 | [TMF633](TMF633-service-catalog) | Service Catalog Management | v4.0.0 | | Shapes the FSA definition | ServiceSpecification |
 | [TMF634](TMF634-resource-catalog) | Resource Catalog Management | R17.0.1, v2.0.2 | RI v5.0.0 | Shapes the FSA definition | ResourceSpecification |
 | [TMF638](TMF638-service-inventory) | Service Inventory Management | v4.0.2 | RI v5.0.0 | Shapes the FSA definition | Service |
-| [TMF639](TMF639-resource-inventory) | Resource Inventory Management | v4.0.0 | | Reference | Resource, LogicalResource |
+| [TMF639](TMF639-resource-inventory) | Resource Inventory Management | v4.0.0 | Postman v4.0.0, RI v4.0.0 | Reference | Resource, LogicalResource |
 | [TMF640](TMF640-service-activation) | Service Activation and Configuration | v4.0.2 | | Reference | Service, Resource |
 | [TMF641](TMF641-service-ordering) | Service Ordering Management | RI v4.2.0 | RI v4.2.0 | Reference | none yet (data entities ServiceOrder, ServiceOrderLine) |
 | [TMF651](TMF651-agreement) | Agreement Management | R19.0.1, v4.0.1 | | Shapes the FSA definition | Agreement, AgreementSpecification |
@@ -61,7 +61,7 @@ To empty a running reference implementation's database:
 curl -X DELETE http://127.0.0.1:8672/tmf-ri-admin/v1/clear-all-data
 ```
 
-The version 4 kits (TMF641, TMF720) also serve HTTPS (port 4 followed by the API number) and mount a certificate that is not in the kit: `ri/certs/api-ri.key` and `ri/certs/api-ri.cert`. Create a self-signed one before the first run; the `certs` folders are ignored by git:
+The version 4 kits (TMF639, TMF641, TMF720) also serve HTTPS (port 4 followed by the API number) and mount a certificate that is not in the kit: `ri/certs/api-ri.key` and `ri/certs/api-ri.cert`. Create a self-signed one before the first run; the `certs` folders are ignored by git:
 
 ```bash
 mkdir -p tmf/TMF720-digital-identity/ri/certs
