@@ -1,12 +1,19 @@
 # TMF672 User Role Permission Management
 
-**FSA status:** Reference  
+**FSA status:** Shapes the FSA definition  
 **Documentation used:** Postman collection, version 5.1.0  
 **Base path:** `/rolesAndPermissionsManagement/v5` (the collection's `apiRoot` is `https://serverRoot/rolesAndPermissionsManagement/v5`)
 
 ## What Film Site Access uses it for
 
 What a party may do: the permissions on a type of place, resource or other asset, grouped into sets and assigned to a party role. It is the authorization side of sign-in; TMF720 is the identity side and TMF669 the roles.
+
+The FSA definition has `/permissionSpecification` and `/permissionSet` in the shape of version 5.1 (ADR 0008 in fsa-backend), with these restrictions:
+
+- The permission specifications are fixed: `managePrivacyPolicy`, `manageTermsOfUse` and `actOnBehalfOf`.
+- A permission set holds exactly one permission, assigned to a user account (`user.securityPrincipal`).
+- The only `managedAssetGroup` is one party, as a `FilterAssetGroup` with `entityType` `Party` and the filter `id=<party id>`.
+- PATCH changes only `validFor.endDateTime`, and only to bring it forward. That is how a permission is revoked.
 
 Information objects in Encyclopedia Galactica (ID in brackets): PermissionSpecification (94), PermissionSet (95), PermissionSpecificationSet (96).
 
