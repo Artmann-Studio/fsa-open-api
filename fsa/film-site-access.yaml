@@ -226,32 +226,37 @@ paths:
   /emergency:
     get:
       tags: [Emergency]
-      operationId: listEmergenciesAtPosition
-      summary: List the active emergencies where a position is
+      operationId: listEmergencies
+      summary: List the active emergencies that concern the caller (BR-32.7)
       description: |
-        Public, so that someone at the location sees the emergency even when not signed in
-        (ADR 0009). Answers with the active emergencies whose location's area contains the
-        position, newest first, without any person or free-text description. The position
-        isn't stored or logged.
-      security: []
+        An active emergency is shown to everyone at the location, signed in or not, and to a
+        signed-in user with access to the location now or later, such as a planned activity,
+        or who may grant access there (ADR 0009). Without sign-in, latitude and longitude are
+        required. The answer has no person or free-text description. The position isn't
+        stored or logged.
+      security:
+        - {}
+        - bearerAuth: []
       parameters:
         - name: latitude
           in: query
-          required: true
+          required: false
+          description: Required without sign-in, and always together with longitude.
           schema:
             type: number
             minimum: -90
             maximum: 90
         - name: longitude
           in: query
-          required: true
+          required: false
+          description: Required without sign-in, and always together with latitude.
           schema:
             type: number
             minimum: -180
             maximum: 180
       responses:
         '200':
-          description: The emergencies at the position, possibly none.
+          description: The emergencies that concern the caller, possibly none.
           content:
             application/json:
               schema:
@@ -1244,7 +1249,7 @@ components:
 
     EmergencyAtPosition:
       type: object
-      description: An active emergency where the caller is. No person, count of people or description.
+      description: An active emergency that concerns the caller (BR-32.7). No person, count of people or description.
       required: [id, location, reason, initiatedAtUtc, status]
       properties:
         id:
