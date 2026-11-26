@@ -10,7 +10,7 @@ The kinds of resource used to deliver a service: physical (locks, gates, card re
 
 Information objects in Encyclopedia Galactica (ID in brackets): ResourceSpecification (35), Resource (40), LogicalResource (101).
 
-> This document is an older generation than the others (release 17, version 2). Its paths and conventions differ from the version 4 APIs. Check with TM Forum which version 4 release to use before defining anything from it.
+> This document is an older generation than the others (release 17, version 2). Its paths and conventions differ from the version 4 APIs. A version 5 reference implementation is now in `ri/`: define FSA resources from version 5, not from this document.
 
 ## Resources and operations
 
@@ -28,6 +28,14 @@ Every API also has `POST /hub` and `DELETE /hub/{id}` to subscribe to its events
 
 Catalogue items carry lifecycleStatus and validFor.
 
+## Files in this folder
+
+| Path | What it is |
+|---|---|
+| `ri/` | TM Forum reference implementation kit for TMF634 version 5.0.0 (image `tmforumorg/tmf634-v5.0.0-ri:1.0.1`, port 8634). See [running a reference implementation](../README.md#reference-implementations) |
+
+The Postman collection downloaded as `tmf634-postman-collection-5.0.0.json` turned out to be TMF620 Product Catalog Management, so it is in [`../TMF620-product-catalog`](../TMF620-product-catalog). The TMF634 collection is still missing.
+
 ## Specification
 
-Not in this folder yet. Only the TM Forum document was available. Add the Swagger or OpenAPI file that TM Forum publishes for this API before generating code or defining FSA resources from it.
+Not in this folder yet. The documentation above is release 17 (version 2); the reference implementation is version 5, which is the release to define FSA resources from. Add the OpenAPI file that TM Forum publishes for version 5 first.

@@ -1,0 +1,61 @@
+name: tmf669-v5-ri
+
+networks:
+  tmf:
+    external: true
+
+services:
+  ri:
+    image: tmforumorg/tmf669-v5.0.0-ri:1.0.1
+    platform: linux/amd64
+    ports:
+      - 8669:8669
+    stdin_open: true
+    tty: true
+    depends_on:
+      - mongo
+      - broker
+    networks:
+      tmf:
+        aliases: [tmf669-ri]
+    environment:
+      DB_URL: mongodb://tmf669-mongo:27017
+      KAFKA_BOOTSTRAP_SERVERS: tmf669-broker:9092
+
+  mongo:
+    image: mongo:4.4.6
+    networks:
+      tmf:
+        aliases: [tmf669-mongo]
+    restart: unless-stopped
+    volumes:
+      - ctk_data_tmf669:/data/db
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.4
+    networks:
+      tmf:
+        aliases: [tmf669-zookeeper]
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:7.4.4
+    networks:
+      tmf:
+        aliases: [tmf669-broker]
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: -1
+      KAFKA_ZOOKEEPER_CONNECT: tmf669-zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://tmf669-broker:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+volumes:
+  ctk_data_tmf669: {}
+

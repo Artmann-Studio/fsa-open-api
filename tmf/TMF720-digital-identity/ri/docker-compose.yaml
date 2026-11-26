@@ -1,0 +1,42 @@
+name: tmf720-v4-ri
+
+networks:
+  tmf:
+    external: true
+
+services:
+  ri:
+    image: tmforumorg/tmf720-v4.0.0-ri:1.0.2
+    platform: linux/amd64
+    ports:
+      - 8720:8720
+      - 4720:4720
+      - 9720:9229
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./certs/api-ri.key:/app/certs/key.pem:ro
+      - ./certs/api-ri.cert:/app/certs/cert.pem:ro
+    depends_on:
+      - mongo
+    networks:
+      tmf:
+        aliases: [tmf720-ri]
+    environment:
+      DB_URL: mongodb://tmf720-mongo:27017
+      HTTPS_KEY_PATH: /app/certs/key.pem
+      HTTPS_CERT_PATH: /app/certs/cert.pem
+    command: 
+      node --inspect=0.0.0.0:9229 index.js
+
+  mongo:
+    image: mongo:4.4.6
+    networks:
+      tmf:
+        aliases: [tmf720-mongo]
+    restart: unless-stopped
+    volumes:
+      - ctk_data:/data/db
+
+volumes:
+  ctk_data: {}
