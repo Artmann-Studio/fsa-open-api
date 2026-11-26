@@ -11,8 +11,7 @@ info:
     sign-up (ADR 0001, 0004), authentication levels and step-up (0002), emergencies (0003),
     digital identities (0005), customer onboarding (0006) and login with password (0007).
 
-    Use cases UC-FSA-31a, 31b, 31c, 33a, 33b and 34b were decided on 2026-11-25 and are not
-    yet in the Encyclopedia Galactica export.
+    The use cases are those in the Encyclopedia Galactica export of 2026-11-26.
 
     Tenancy is backend-only and never appears in this API. Fields without a value are left
     out of responses rather than sent as null.
@@ -41,7 +40,7 @@ tags:
       Customer onboarding by Film Site Access staff (ADR 0006): list customers (UC-FSA-33a)
       and add a customer, the CRM customer id and setup (UC-FSA-33b). Adding and ending
       services by staff has no use case yet. A customer's own change to its services is a
-      service order (UC-FSA-34b), not built.
+      service order (UC-FSA-35b), not built.
 security:
   - bearerAuth: []
 
