@@ -21,7 +21,7 @@ it (quality rule 09-05, *contract first*).
 | [TMF674 Geographic Site Management](tmf/TMF674-geographic-site) | 19.5 | Locations (version 0.4 in the MVP roadmap) |
 | [TMF713 Work Management](tmf/TMF713-work-management) | 4.0.0 beta | Activity assignments |
 
-The other TM Forum APIs in [`tmf`](tmf/README.md) are documented, but their specification files aren't in the repository yet. For TMF620, TMF629, TMF632, TMF634, TMF638, TMF641, TMF669, TMF672, TMF720 and TMF771 there is a TM Forum Postman collection, a reference implementation kit, or both; most are version 5.
+The other TM Forum APIs in [`tmf`](tmf/README.md) are documented, but their specification files aren't in the repository yet. For TMF620, TMF629, TMF632, TMF634, TMF638, TMF639, TMF641, TMF669, TMF672, TMF720 and TMF771 there is a TM Forum Postman collection, a reference implementation kit, or both; most are version 5.
 
 ## Run a TM Forum reference implementation
 
