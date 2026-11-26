@@ -542,7 +542,7 @@ paths:
     get:
       tags: [Specification]
       operationId: listProductSpecifications
-      summary: List what customers can be offered (TMF620)
+      summary: List the kinds of product, which the app calls equipment (TMF620)
       responses:
         '200':
           description: The product specifications, from configuration.
@@ -1471,8 +1471,8 @@ components:
 
     ProductSpecification:
       type: object
-      description: What a customer can be offered, as a set of functions (TMF620).
-      required: [id, name, description, version, lifecycleStatus, forPartyType, serviceSpecification]
+      description: A kind of product, which the app calls equipment, such as a camera kit (TMF620).
+      required: [id, name, description, version, lifecycleStatus]
       properties:
         id:
           type: string
@@ -1484,22 +1484,14 @@ components:
           type: string
         lifecycleStatus:
           $ref: '#/components/schemas/LifecycleStatus'
-        forPartyType:
-          type: array
-          items:
-            $ref: '#/components/schemas/PartyTypeValue'
-        serviceSpecification:
-          type: array
-          items:
-            $ref: '#/components/schemas/SpecificationRef'
         '@type':
           type: string
           enum: [ProductSpecification]
 
     ActivityAssignmentSpecification:
       type: object
-      description: A kind of activity assignment, with the kinds of resource it may involve.
-      required: [id, name, description, version, lifecycleStatus, resourceSpecification]
+      description: A kind of activity assignment, with the kinds of resource and product it may involve.
+      required: [id, name, description, version, lifecycleStatus, resourceSpecification, productSpecification]
       properties:
         id:
           type: string
@@ -1512,6 +1504,10 @@ components:
         lifecycleStatus:
           $ref: '#/components/schemas/LifecycleStatus'
         resourceSpecification:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecificationRef'
+        productSpecification:
           type: array
           items:
             $ref: '#/components/schemas/SpecificationRef'
