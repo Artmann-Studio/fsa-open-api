@@ -28,7 +28,7 @@ Each folder has a README: what FSA uses the API for, the information objects it 
 | [TMF641](TMF641-service-ordering) | Service Ordering Management | RI v4.2.0 | RI v4.2.0 | Reference | none yet (data entities ServiceOrder, ServiceOrderLine) |
 | [TMF651](TMF651-agreement) | Agreement Management | R19.0.1, v4.0.1 | | Shapes the FSA definition | Agreement, AgreementSpecification |
 | [TMF669](TMF669-party-role) | Party Role Management | R19.0, v4.0.0 | Postman v5.0.0, RI v5.0.0 | Reference | PartyRole, PartyRoleSpecification |
-| [TMF672](TMF672-user-roles-permissions) | User Role Permission Management | Postman v5.1.0 | Postman v5.1.0, RI v5.1.0 | Reference | PermissionSpecification, PermissionSet, PermissionSpecificationSet |
+| [TMF672](TMF672-user-roles-permissions) | User Role Permission Management | Postman v5.1.0 | Postman v5.1.0, RI v5.1.0 | Shapes the FSA definition | PermissionSpecification, PermissionSet, PermissionSpecificationSet |
 | [TMF673](TMF673-geographic-address) | Geographic Address Management | R17.5.0, v1.2.2 | | Reference | GeographicAddress |
 | [TMF674](TMF674-geographic-site) | Geographic Site Management | v4.0.0 | Spec v4.0.0 | Specification in this folder | Place, GeographicSite |
 | [TMF713](TMF713-work-management) | Work Management | v4.0.0 beta | Spec v4.0.0 beta | Specification in this folder | ActivityAssignment, ActivityAssignmentSpecification, Activity |
