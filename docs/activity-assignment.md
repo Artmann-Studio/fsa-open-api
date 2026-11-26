@@ -30,13 +30,16 @@ An ActivityAssignment relates to five kinds of object. TMF713 `Work` has a place
 | Related object | Information object | Work attribute | TM Forum resource |
 |---|---|---|---|
 | Place | Place (49) | `place[]` (RelatedPlaceRefOrValue), `role: location` | TMF674 GeographicSite |
-| Individual | Individual (31) | `relatedParty[]` (RelatedParty), `@referredType: Individual`, `role: assignee` | TMF632 Individual |
+| Individual | Individual (31) | `relatedParty[]` (RelatedParty), `@referredType: Individual`, `role`: `assignee`, `contact` or `approver` | TMF632 Individual |
 | AccessPoint | AccessPoint (22) | Extension: `accessPoint[]` (EntityRef, `@referredType: AccessPoint`) | None; FSA API |
-| Resource | Resource (40) | Extension: `resource[]` (EntityRef, `@referredType: Resource`) | TMF639 Resource |
-| Equipment | Product (36) | Extension: `product[]` (EntityRef, `@referredType: Product`) | TMF637 Product |
+| Resource | Resource (40) | `resource[]` (ResourceRef, `@referredType: Resource`) | TMF639 Resource |
+| Equipment | Product (36) | `product[]` (ProductRef, `@referredType: Product`) | TMF637 Product |
 
-The extension is the TM Forum sub-class mechanism: `@type: ActivityAssignment`, `@baseType: Work`, and a JSON Schema at `@schemaLocation` that adds `accessPoint`, `resource` and `product`. Each is a list of references, with the cardinality 0..n of relations 18 and 19.
+Resource and Product use TM Forum's standard references (decision by the model owner, 2026-11-26): `ResourceRef` from TMF639 and `ProductRef` from TMF637, each with `id`, `href`, `name` and `@referredType`. Only AccessPoint, which has no TM Forum resource, refers to the FSA API with a plain `EntityRef`.
 
+TMF713 v4 `Work` has no `resource`, `product` or `accessPoint` field, so all three lists are added with the TM Forum sub-class mechanism: `@type: ActivityAssignment`, `@baseType: Work`, and a JSON Schema at `@schemaLocation` that adds them. Each is a list of references, with the cardinality 0..n of relations 18 and 19.
+
+- **`relatedParty.role` says how the individual takes part:** `assignee` for the person who should be there, `contact` or `approver` for the people around the activity. The individual's own party role, such as Producer, belongs to the Individual, not to the assignment.
 - **Individual uses `relatedParty`, not `workforceEmployeeAssignment`.** TMF713 writes WorkforceEmployeeAssignment for a company's own workforce. In FSA the individual is often a visitor or crew from another company, and the relation is to the Individual, not to a role.
 - **AccessPoint is not put in `place[]`.** AccessPoint is not a subtype of Place (remark on relation 9), so it gets its own list instead of a place with a role.
 - **Equipment is the business term; Product is the information object.** The API and code say `product`. The app says *equipment*.
