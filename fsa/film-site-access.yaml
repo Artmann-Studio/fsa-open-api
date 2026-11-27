@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Film Site Access API
-  version: 0.4.0
+  version: 0.4.1
   description: |
     The API that Film Site Access defines itself, where no TM Forum Open API covers the
     resource. It follows TM Forum conventions: camelCase names, `@type` on resources,
@@ -10,7 +10,8 @@ info:
     Decisions behind each part are in fsa-backend, `doc/decisions`:
     sign-up (ADR 0001, 0004), authentication levels and step-up (0002), emergencies (0003),
     digital identities (0005), customer onboarding (0006), login with password (0007),
-    specifications and permissions (0008) and emergencies at a position (0009).
+    specifications and permissions (0008), emergencies at a position (0009) and
+    environments and client authentication (0010).
 
     The use cases are those in the Encyclopedia Galactica export of 2026-11-26.
 
@@ -24,6 +25,8 @@ servers:
   - url: http://localhost:5080/v1
     description: Local development
 tags:
+  - name: Health
+    description: Whether the API answers. The protected check needs the client token (ADR 0010), not login
   - name: Sign-up
     description: Sign up an individual (UC-FSA-31a) or an organization (UC-FSA-31b), and verify the email address (UC-FSA-31c)
   - name: Authentication
@@ -46,6 +49,34 @@ security:
   - bearerAuth: []
 
 paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: checkHealthWithClientToken
+      summary: Check that the API answers, with the client token
+      description: |
+        For a client, for example the iOS app, to check that it reaches the API as our app,
+        without login. Uses the client layer of ADR 0010: the client token in
+        `FSA-Client-Token`. In `development` and `test` that is the static client token, the
+        key vault secret `ClientAuthentication--StaticToken`. A user's access token is never
+        accepted as a client token, and the client token doesn't count as a bearer token.
+        The public `GET /health` outside `/v1` answers without a token, for App Service.
+      security:
+        - clientToken: []
+      responses:
+        '200':
+          description: The API answers and the token is accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '401':
+          description: '`clientNotAuthenticated`: no client token, a wrong one, or none configured in the API. The answer is the same for all three.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /signUp:
     post:
       tags: [Sign-up]
@@ -796,6 +827,11 @@ components:
       type: http
       scheme: bearer
       description: The access token from `POST /authentication/password`. Valid for 8 hours or until logout.
+    clientToken:
+      type: apiKey
+      in: header
+      name: FSA-Client-Token
+      description: Proof that the call comes from our app in this environment (ADR 0010). In `development` and `test` the static client token, the key vault secret `ClientAuthentication--StaticToken`. So far only for `GET /health`.
 
   parameters:
     Id:
@@ -827,6 +863,14 @@ components:
 
   schemas:
     # MARK: Common
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
 
     Error:
       type: object
