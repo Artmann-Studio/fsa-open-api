@@ -1,0 +1,490 @@
+{
+  "info": {
+    "_postman_id": "685ffb4d-748a-48f5-b2ae-d07cf206894e",
+    "name": "TMF639-ResourceInventory-v4.0.0",
+    "description": "## TMF API Reference: TMF639 - Resource Inventory \n\n### Release : 19.5 - December 2019\n\nResource Inventory  API goal is to provide the ability to manage Resources.\n\n### Operations\nResource Inventory API performs the following operations on the resources :\n- Retrieve an entity or a collection of entities depending on filter criteria\n- Partial update of an entity (including updating rules)\n- Create an entity (including default values and creation rules)\n- Delete an entity (for administration purposes)\n- Manage notification of events",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "resource",
+      "item": [
+        {
+          "name": "List or find Resource objects",
+          "_postman_id": "559064cc-e976-4d35-ab6c-60d95ece0293",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/resource",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "resource"
+              ],
+              "query": [
+                {
+                  "key": "fields",
+                  "value": "{{fields}}"
+                },
+                {
+                  "key": "offset",
+                  "value": "{{offset}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}"
+                }
+              ]
+            },
+            "description": "This operation list or find Resource entities"
+          },
+          "response": []
+        },
+        {
+          "name": "Creates a Resource",
+          "_postman_id": "3774189f-4fa2-47a1-b45c-aad6020eb82c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Premium\",\n  \"value\": \"0170123456\",\n  \"administrativeState\": \"unlocked\",\n  \"operationalState\": \"disable\",\n  \"usageState\": \"idle\",\n  \"resourceStatus\": \"available\",\n  \"resourceSpecification\": {\n    \"id\": \"4\",\n    \"href\": \" http://server:port/resourceCatalogManagement/resourceSpecification/4\",\n    \"@referredType\": \"LogicalResourceSpecification\"\n  },\n  \"resourceCharacteristic\": [\n    {\n      \"name\": \"premiumValue\",\n      \"valueType\": \"string\",\n      \"value\": \"gold\"\n    }\n  ],\n  \"relatedParty\": [\n    {\n      \"href\": \"https://server:port/tmf-api/partyManagement/v4/individual/456\",\n      \"id\": \"456\",\n      \"name\": \"John Doe\",\n      \"role\": \"user\",\n      \"@referredType\": \"Individual\"\n    }\n  ],\n  \"@type\": \"MSISDN\",\n  \"@schemaLocation\": \"http://server:port/MSISDN.schema.json\",\n  \"@baseType\": \"Resource\"\n}"
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/resource",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "resource"
+              ]
+            },
+            "description": "This operation creates a Resource entity."
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieves a Resource by ID",
+          "_postman_id": "f7e01ddd-0a8e-4d45-bebe-60dc1192d4b8",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/resource/:id",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "resource",
+                ":id"
+              ],
+              "query": [
+                {
+                  "key": "fields",
+                  "value": "{{fields}}"
+                }
+              ],
+              "variable": [
+                {
+                  "value": "{{id}}",
+                  "id": "id"
+                }
+              ]
+            },
+            "description": "This operation retrieves a Resource entity. Attribute selection is enabled for all first level attributes."
+          },
+          "response": []
+        },
+        {
+          "name": "Updates partially a Resource",
+          "_postman_id": "624690a1-d5ff-404f-b3fc-5a4a3922336c",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceStatus\": \"reserved\"\n}"
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/resource/:id",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "resource",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "value": "{{id}}",
+                  "id": "id"
+                }
+              ]
+            },
+            "description": "This operation updates partially a Resource entity."
+          },
+          "response": []
+        },
+        {
+          "name": "Deletes a Resource",
+          "_postman_id": "8ac67264-5489-482f-bd4a-1627fe0b0984",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/resource/:id",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "resource",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "value": "{{id}}",
+                  "id": "id"
+                }
+              ]
+            },
+            "description": "This operation deletes a Resource entity."
+          },
+          "response": []
+        }
+      ],
+      "_postman_id": "b38edca8-4824-4934-a27d-5a4f6b1e3702",
+      "description": "Folder for resource"
+    },
+    {
+      "name": "hub",
+      "item": [
+        {
+          "name": "Register a listener",
+          "_postman_id": "25989594-e872-4ed9-ad02-4654e853e92f",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"callback\": \"callback\",\n    \"query\": \"query\"\n}"
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/hub",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "hub"
+              ]
+            },
+            "description": "Sets the communication endpoint address the service instance must use to deliver information about its health state, execution state, failures and metrics."
+          },
+          "response": []
+        },
+        {
+          "name": "Unregister a listener",
+          "_postman_id": "79dc676e-40b3-4bf5-a073-f83f0d142744",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/hub/:id",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "hub",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "value": "{{id}}",
+                  "id": "id"
+                }
+              ]
+            },
+            "description": "Resets the communication endpoint address the service instance must use to deliver information about its health state, execution state, failures and metrics."
+          },
+          "response": []
+        }
+      ],
+      "_postman_id": "86ec57ce-3603-40cd-ab1a-52351f2e04f6",
+      "description": "Folder for hub"
+    },
+    {
+      "name": "listener",
+      "item": [
+        {
+          "name": "Client listener for entity ResourceCreateEvent",
+          "_postman_id": "9d7b0478-78b3-407b-b1f6-0b51f7235aae",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "The event data"
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/listener/resourceCreateEvent",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "listener",
+                "resourceCreateEvent"
+              ]
+            },
+            "description": "Example of a client listener for receiving the notification ResourceCreateEvent"
+          },
+          "response": []
+        },
+        {
+          "name": "Client listener for entity ResourceAttributeValueChangeEvent",
+          "_postman_id": "5a425f94-3b2c-4370-93c2-288556f4a837",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "The event data"
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/listener/resourceAttributeValueChangeEvent",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "listener",
+                "resourceAttributeValueChangeEvent"
+              ]
+            },
+            "description": "Example of a client listener for receiving the notification ResourceAttributeValueChangeEvent"
+          },
+          "response": []
+        },
+        {
+          "name": "Client listener for entity ResourceStateChangeEvent",
+          "_postman_id": "830c034c-02f2-4fec-8994-176fa54b83c2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "The event data"
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/listener/resourceStateChangeEvent",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "listener",
+                "resourceStateChangeEvent"
+              ]
+            },
+            "description": "Example of a client listener for receiving the notification ResourceStateChangeEvent"
+          },
+          "response": []
+        },
+        {
+          "name": "Client listener for entity ResourceDeleteEvent",
+          "_postman_id": "8fe17076-1ca2-408c-97f0-95573e7ab625",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json;charset=utf-8"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json;charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "The event data"
+            },
+            "url": {
+              "raw": "{{scheme}}://{{host}}:{{port}}/tmf-api/resourceInventoryManagement/v4/listener/resourceDeleteEvent",
+              "protocol": "{{scheme}}",
+              "host": [
+                "{{host}}"
+              ],
+              "port": "{{port}}",
+              "path": [
+                "tmf-api",
+                "resourceInventoryManagement",
+                "v4",
+                "listener",
+                "resourceDeleteEvent"
+              ]
+            },
+            "description": "Example of a client listener for receiving the notification ResourceDeleteEvent"
+          },
+          "response": []
+        }
+      ],
+      "_postman_id": "14e1de83-154f-4e6f-b0a8-397467552915",
+      "description": "Folder for listener"
+    }
+  ]
+}

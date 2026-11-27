@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Film Site Access API
-  version: 0.3.1
+  version: 0.4.1
   description: |
     The API that Film Site Access defines itself, where no TM Forum Open API covers the
     resource. It follows TM Forum conventions: camelCase names, `@type` on resources,
@@ -9,7 +9,9 @@ info:
 
     Decisions behind each part are in fsa-backend, `doc/decisions`:
     sign-up (ADR 0001, 0004), authentication levels and step-up (0002), emergencies (0003),
-    digital identities (0005), customer onboarding (0006) and login with password (0007).
+    digital identities (0005), customer onboarding (0006), login with password (0007),
+    specifications and permissions (0008), emergencies at a position (0009) and
+    environments and client authentication (0010).
 
     The use cases are those in the Encyclopedia Galactica export of 2026-11-26.
 
@@ -24,7 +26,7 @@ servers:
     description: Local development
 tags:
   - name: Health
-    description: Whether the API answers. The protected check needs the health check access token from the key vault, not login
+    description: Whether the API answers. The protected check needs the client token (ADR 0010), not login
   - name: Sign-up
     description: Sign up an individual (UC-FSA-31a) or an organization (UC-FSA-31b), and verify the email address (UC-FSA-31c)
   - name: Authentication
@@ -50,15 +52,17 @@ paths:
   /health:
     get:
       tags: [Health]
-      operationId: checkHealthWithAccessToken
-      summary: Check that the API answers, with the health check access token
+      operationId: checkHealthWithClientToken
+      summary: Check that the API answers, with the client token
       description: |
-        For a client that has the health check access token, for example the iOS app in
-        development, to check that it reaches the API without login. The token is the key
-        vault secret `HealthCheck--AccessToken`. A session's access token isn't accepted.
+        For a client, for example the iOS app, to check that it reaches the API as our app,
+        without login. Uses the client layer of ADR 0010: the client token in
+        `FSA-Client-Token`. In `development` and `test` that is the static client token, the
+        key vault secret `ClientAuthentication--StaticToken`. A user's access token is never
+        accepted as a client token, and the client token doesn't count as a bearer token.
         The public `GET /health` outside `/v1` answers without a token, for App Service.
       security:
-        - healthCheckAccessToken: []
+        - clientToken: []
       responses:
         '200':
           description: The API answers and the token is accepted.
@@ -67,12 +71,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Health'
         '401':
-          description: '`notAuthenticated`: no token, a wrong token, or no token configured in the API. The answer is the same for all three.'
-          headers:
-            WWW-Authenticate:
-              schema:
-                type: string
-                enum: [Bearer]
+          description: '`clientNotAuthenticated`: no client token, a wrong one, or none configured in the API. The answer is the same for all three.'
           content:
             application/json:
               schema:
@@ -734,16 +733,19 @@ paths:
       tags: [Permission]
       operationId: listPermissionSets
       summary: List a user account's permissions
-      description: Without `userAccount`, the caller's own. Another account's only for whoever may assign a permission to it.
+      description: |
+        Without `user.securityPrincipal.id`, the caller's own. Another account's only for whoever
+        may assign a permission to it.
       parameters:
-        - name: userAccount
+        - name: user.securityPrincipal.id
           in: query
           required: false
+          description: The user account whose permission sets to list (TMF attribute filter).
           schema:
             type: string
       responses:
         '200':
-          description: The permission sets, newest first, including revoked and expired ones.
+          description: The permission sets, newest first, including ended ones.
           content:
             application/json:
               schema:
@@ -761,7 +763,7 @@ paths:
       description: |
         `managePrivacyPolicy` and `manageTermsOfUse`: only a customer administrator in Film Site
         Access's own tenant, to a user account there. `actOnBehalfOf`: the Administrator of the
-        user account's tenant; it needs `onBehalfOf`.
+        user account's tenant; its permission needs a `managedAssetGroup` naming the party.
       requestBody:
         required: true
         content:
@@ -786,7 +788,11 @@ paths:
     patch:
       tags: [Permission]
       operationId: updatePermissionSet
-      summary: Revoke a permission
+      summary: End a permission
+      description: |
+        Sets the end of the permission set's validity, as TMF672 does: an end now or in the past
+        revokes it now; an end in the future shortens it. The end can't be moved later, and nothing
+        else can be changed. The set is kept for the audit trail.
       parameters:
         - $ref: '#/components/parameters/Id'
       requestBody:
@@ -794,15 +800,10 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [state]
-              properties:
-                state:
-                  type: string
-                  enum: [revoked]
+              $ref: '#/components/schemas/PermissionSetUpdate'
       responses:
         '200':
-          description: Revoked. Kept for the audit trail.
+          description: Ended or shortened.
           content:
             application/json:
               schema:
@@ -814,7 +815,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '409':
-          description: '`permissionSetNotActive`.'
+          description: '`permissionSetNotActive`: the permission has already ended.'
           content:
             application/json:
               schema:
@@ -826,10 +827,11 @@ components:
       type: http
       scheme: bearer
       description: The access token from `POST /authentication/password`. Valid for 8 hours or until logout.
-    healthCheckAccessToken:
-      type: http
-      scheme: bearer
-      description: The health check access token, the key vault secret `HealthCheck--AccessToken`. Only for `GET /health`.
+    clientToken:
+      type: apiKey
+      in: header
+      name: FSA-Client-Token
+      description: Proof that the call comes from our app in this environment (ADR 0010). In `development` and `test` the static client token, the key vault secret `ClientAuthentication--StaticToken`. So far only for `GET /health`.
 
   parameters:
     Id:
@@ -1678,7 +1680,11 @@ components:
 
     PermissionSpecification:
       type: object
-      required: [id, name, description, requiresParty]
+      description: |
+        An action that may be permitted (TMF672 v5.1). `function` is the kind of entity the
+        permission acts on and `action` what may be done to it. A permission whose function is
+        `Party` applies to one party, which the permission set names in `managedAssetGroup`.
+      required: [id, name, description, function, action]
       properties:
         id:
           type: string
@@ -1687,44 +1693,128 @@ components:
           type: string
         description:
           type: string
-        requiresParty:
-          type: boolean
-          description: True when a permission set must name the party it applies to.
+        function:
+          type: string
+          enum: [AgreementSpecification, Party]
+        action:
+          type: string
+          enum: [publishPrivacyPolicy, publishTermsOfUse, actOnBehalfOf]
         '@type':
           type: string
           enum: [PermissionSpecification]
 
-    PermissionSet:
+    PermissionSpecificationRef:
       type: object
-      description: A permission assigned to a user account (TMF672).
-      required: [id, userAccount, permissionSpecification, validFor, state, assignedBy]
+      required: [id]
       properties:
         id:
           type: string
-        userAccount:
-          $ref: '#/components/schemas/UserAccountRef'
+          enum: [managePrivacyPolicy, manageTermsOfUse, actOnBehalfOf]
+        name:
+          type: string
+        function:
+          type: string
+        action:
+          type: string
+        '@type':
+          type: string
+          enum: [PermissionSpecificationRef]
+        '@referredType':
+          type: string
+          enum: [PermissionSpecification]
+
+    PartyAssetGroup:
+      type: object
+      description: |
+        The one party a permission applies to, as a TMF672 `FilterAssetGroup`: `entityType`
+        `Party` and the filter `id=<party id>`. Film Site Access accepts no other filter.
+      required: [entityType, filter]
+      properties:
+        entityType:
+          type: string
+          enum: [Party]
+        filter:
+          type: string
+          pattern: '^id=[^&=]+$'
+          example: id=6a1f3c2e-9b7d-4e1a-8c55-0f2d9e4b7a10
+        '@type':
+          type: string
+          enum: [FilterAssetGroup]
+        '@baseType':
+          type: string
+          enum: [AssetGroup]
+
+    Permission:
+      type: object
+      required: [permissionSpecification]
+      properties:
         permissionSpecification:
+          $ref: '#/components/schemas/PermissionSpecificationRef'
+        managedAssetGroup:
+          $ref: '#/components/schemas/PartyAssetGroup'
+        '@type':
+          type: string
+          enum: [Permission]
+
+    RelatedSecurityPrincipal:
+      type: object
+      description: The user account a permission set is assigned to (TMF672 `user`).
+      required: [securityPrincipal]
+      properties:
+        securityPrincipal:
+          $ref: '#/components/schemas/UserAccountRef'
+        '@type':
+          type: string
+          enum: [RelatedSecurityPrincipal]
+
+    PermissionGranter:
+      type: object
+      description: |
+        Who assigned the permission set (TMF672 `granter`, a `RelatedPartyRefOrPartyRoleRef`):
+        the individual of the user account that assigned it.
+      required: [partyOrPartyRole]
+      properties:
+        partyOrPartyRole:
           type: object
           required: [id]
           properties:
             id:
               type: string
-        onBehalfOf:
-          type: object
-          required: [id]
-          properties:
-            id:
+            '@type':
               type: string
+              enum: [PartyRef]
             '@referredType':
               type: string
-              enum: [Party]
+              enum: [Individual]
+        '@type':
+          type: string
+          enum: [RelatedPartyRefOrPartyRoleRef]
+
+    PermissionSet:
+      type: object
+      description: |
+        Permissions assigned to a user account (TMF672 v5.1). Film Site Access assigns one
+        permission per set, so that each can be ended and audited on its own. A set is active
+        from `validFor.startDateTime` until `validFor.endDateTime`, if it has one.
+      required: [id, creationDate, user, granter, permission, validFor]
+      properties:
+        id:
+          type: string
+        creationDate:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/RelatedSecurityPrincipal'
+        granter:
+          $ref: '#/components/schemas/PermissionGranter'
+        permission:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items:
+            $ref: '#/components/schemas/Permission'
         validFor:
           $ref: '#/components/schemas/ValidFor'
-        state:
-          type: string
-          enum: [active, revoked, expired]
-        assignedBy:
-          $ref: '#/components/schemas/UserAccountRef'
         '@type':
           type: string
           enum: [PermissionSet]
@@ -1743,30 +1833,50 @@ components:
 
     PermissionSetCreate:
       type: object
-      required: [userAccount, permissionSpecification]
+      required: [user, permission]
       properties:
-        userAccount:
+        user:
           type: object
-          required: [id]
+          required: [securityPrincipal]
           properties:
-            id:
-              type: string
-        permissionSpecification:
-          type: object
-          required: [id]
-          properties:
-            id:
-              type: string
-              enum: [managePrivacyPolicy, manageTermsOfUse, actOnBehalfOf]
-        onBehalfOf:
-          type: object
-          nullable: true
-          description: Required for `actOnBehalfOf`, not allowed for the others.
-          required: [id]
-          properties:
-            id:
-              type: string
+            securityPrincipal:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+        permission:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items:
+            type: object
+            required: [permissionSpecification]
+            properties:
+              permissionSpecification:
+                type: object
+                required: [id]
+                properties:
+                  id:
+                    type: string
+                    enum: [managePrivacyPolicy, manageTermsOfUse, actOnBehalfOf]
+              managedAssetGroup:
+                allOf:
+                  - $ref: '#/components/schemas/PartyAssetGroup'
+                description: Required for `actOnBehalfOf`, not allowed for the others.
         validFor:
           allOf:
             - $ref: '#/components/schemas/ValidFor'
-          description: An end in the future, or none.
+          description: An end in the future, or none. The start is always now.
+
+    PermissionSetUpdate:
+      type: object
+      required: [validFor]
+      properties:
+        validFor:
+          type: object
+          required: [endDateTime]
+          properties:
+            endDateTime:
+              type: string
+              format: date-time
